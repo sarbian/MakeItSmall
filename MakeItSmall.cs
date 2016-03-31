@@ -90,15 +90,18 @@ namespace MakeItSmall
                 ConfigNode config = ConfigNode.Load(IOUtils.GetFilePathFor(this.GetType(), "MakeItSmall.cfg"));
                 ConfigNode.LoadObjectFromConfig(this, config);
             }
-            GameEvents.onGameStateSaved.Add(onGameStateSaved);
+            GameEvents.onGameStateSaved.Add(data => SaveConfig());
+            GameEvents.onGameSceneLoadRequested.Add(scene => SaveConfig());
         }
 
-        void onGameStateSaved(Game game)
+
+        void SaveConfig()
         {
             ConfigNode node = new ConfigNode("MakeItSmall");
             ConfigNode.CreateConfigFromObject(this, node);
             node.Save(IOUtils.GetFilePathFor(this.GetType(), "MakeItSmall.cfg"));
         }
+
 
         public void Update()
         {
@@ -145,6 +148,7 @@ namespace MakeItSmall
             {
                 UIMasterController.Instance.SetScale(scale);
                 GameSettings.UI_SCALE = scale;
+                GameSettings.SaveSettings();
             }
 
 
