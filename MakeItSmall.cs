@@ -23,6 +23,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 using KSP.IO;
 using KSP.UI;
+using KSP.UI.Screens.Flight;
 using UnityEngine;
 
 namespace MakeItSmall
@@ -32,6 +33,9 @@ namespace MakeItSmall
     {
         [Persistent]
         private float navBallScale = 1;
+
+        [Persistent]
+        private float offset = 0;
 
         [Persistent]
         private float altimeterScale = 1;
@@ -72,6 +76,8 @@ namespace MakeItSmall
         //private InitialState initialUiModState = new InitialState();
         private InitialState initialCrewState = new InitialState();
 
+        private NavBallBurnVector navBallBurnVector;
+
         private class InitialState
         {
             public Vector3 scale;
@@ -90,50 +96,64 @@ namespace MakeItSmall
                 ConfigNode config = ConfigNode.Load(IOUtils.GetFilePathFor(this.GetType(), "MakeItSmall.cfg"));
                 ConfigNode.LoadObjectFromConfig(this, config);
             }
+            GameEvents.onLevelWasLoadedGUIReady.Add(OnLevelLoadedGUIReady);
             GameEvents.onGameStateSaved.Add(data => SaveConfig());
             GameEvents.onGameSceneLoadRequested.Add(scene => SaveConfig());
         }
 
+        public void OnDestroy()
+        {
+            GameEvents.onGameStateSaved.Remove(data => SaveConfig());
+            GameEvents.onGameSceneLoadRequested.Remove(scene => SaveConfig());
+            GameEvents.onLevelWasLoadedGUIReady.Remove(OnLevelLoadedGUIReady);
+        }
 
-        void SaveConfig()
+        private void SaveConfig()
         {
             ConfigNode node = new ConfigNode("MakeItSmall");
             ConfigNode.CreateConfigFromObject(this, node);
             node.Save(IOUtils.GetFilePathFor(this.GetType(), "MakeItSmall.cfg"));
         }
 
+        private void OnLevelLoadedGUIReady(GameScenes data)
+        {
+            if (HighLogic.LoadedScene != GameScenes.FLIGHT)
+                return;
+
+            scale = GameSettings.UI_SCALE;
+
+            SaveState(FlightUIModeController.Instance.navBall, initialNavBallState);
+            SaveState(FlightUIModeController.Instance.altimeterFrame, initialAltimeterState);
+            SaveState(FlightUIModeController.Instance.timeFrame, initialTimeState);
+            //SaveState(FlightUIModeController.Instance.MapOptionsQuadrant, initialMapOptionsState);
+            //SaveState(FlightUIModeController.Instance.stagingQuadrant, initialStagingState);
+            //SaveState(FlightUIModeController.Instance.dockingRotQuadrant, initialdockingRotState);
+            //SaveState(FlightUIModeController.Instance.dockingLinQuadrant, initialdockingLinState);
+            //SaveState(FlightUIModeController.Instance.uiModeFrame, initialUiModState);
+            SaveState(FlightUIModeController.Instance.crew, initialCrewState);
+
+            //printRectInfo(FlightUIModeController.Instance.navBall, "navBall");
+            //printRectInfo(FlightUIModeController.Instance.altimeterFrame,"altimeterFrame");
+            //printRectInfo(FlightUIModeController.Instance.timeFrame,"timeFrame");
+            //printRectInfo(FlightUIModeController.Instance.MapOptionsQuadrant,"MapOptionsQuadrant");
+            //printRectInfo(FlightUIModeController.Instance.stagingQuadrant,"stagingQuadrant");
+            //printRectInfo(FlightUIModeController.Instance.crew, "crew");
+
+            navBallBurnVector = GameObject.FindObjectOfType<NavBallBurnVector>();
+            
+            // The node remaining dv cursor is moved in LateUpdate
+            // So I need an new component that run after the stock one
+            // to move it in the right position
+            navBallBurnVector.deltaVGauge.gameObject.AddComponent<HelixGaugeMover>();
+
+            initialSaved = true;
+        }
 
         public void Update()
         {
-            if (HighLogic.LoadedScene != GameScenes.FLIGHT || !FlightUIModeController.Instance)
+            if (!initialSaved || HighLogic.LoadedScene != GameScenes.FLIGHT || !FlightUIModeController.Instance || navBallBurnVector.deltaVGauge == null)
                 return;
-
-
-            if (!initialSaved)
-            {
-
-                scale = GameSettings.UI_SCALE;
-
-                SaveState(FlightUIModeController.Instance.navBall, initialNavBallState);
-                SaveState(FlightUIModeController.Instance.altimeterFrame, initialAltimeterState);
-                SaveState(FlightUIModeController.Instance.timeFrame, initialTimeState);
-                //SaveState(FlightUIModeController.Instance.MapOptionsQuadrant, initialMapOptionsState);
-                //SaveState(FlightUIModeController.Instance.stagingQuadrant, initialStagingState);
-                //SaveState(FlightUIModeController.Instance.dockingRotQuadrant, initialdockingRotState);
-                //SaveState(FlightUIModeController.Instance.dockingLinQuadrant, initialdockingLinState);
-                //SaveState(FlightUIModeController.Instance.uiModeFrame, initialUiModState);
-                SaveState(FlightUIModeController.Instance.crew, initialCrewState);
-                
-                //printRectInfo(FlightUIModeController.Instance.navBall, "navBall");
-                //printRectInfo(FlightUIModeController.Instance.altimeterFrame,"altimeterFrame");
-                //printRectInfo(FlightUIModeController.Instance.timeFrame,"timeFrame");
-                //printRectInfo(FlightUIModeController.Instance.MapOptionsQuadrant,"MapOptionsQuadrant");
-                //printRectInfo(FlightUIModeController.Instance.stagingQuadrant,"stagingQuadrant");
-                //printRectInfo(FlightUIModeController.Instance.crew, "crew");
-
-                initialSaved = true;
-            }
-
+            
             SetScale(FlightUIModeController.Instance.navBall, initialNavBallState, navBallScale, ref activeNavBallScale);
             SetScale(FlightUIModeController.Instance.altimeterFrame, initialAltimeterState, altimeterScale, ref activeAltimeterScale);
             SetScale(FlightUIModeController.Instance.timeFrame, initialTimeState, timeScale, ref activeTimeScale);
@@ -150,7 +170,6 @@ namespace MakeItSmall
                 GameSettings.UI_SCALE = scale;
                 GameSettings.SaveSettings();
             }
-
 
             if (GameSettings.MODIFIER_KEY.GetKey() && Input.GetKeyDown(KeyCode.U))
             {
@@ -180,7 +199,6 @@ namespace MakeItSmall
                     panel.states[i].position = initialState.states[i].position * newScale;
                 }
 
-                //panel. = initialState.states[panel.StateIndex].position;
                 panel.panelTransform.anchoredPosition = panel.states[panel.StateIndex].position;
 
                 activeScale = newScale;
@@ -210,6 +228,7 @@ namespace MakeItSmall
 
             ScaleUI("All"  , ref scale);
             ScaleUI("NavBall"  , ref navBallScale);
+            ScaleUI("NavBall Offset", ref offset, 10f, 0);
             ScaleUI("Altimeter", ref altimeterScale);
             ScaleUI("Time"     , ref timeScale);
             //ScaleUI("Map"      , ref mapOptionsScale);
@@ -221,26 +240,26 @@ namespace MakeItSmall
             GUI.DragWindow();
         }
 
-        private void ScaleUI(string V, ref float scale)
+        private void ScaleUI(string V, ref float scale, float step=0.05f, float def = 1f)
         {
             GUILayout.BeginHorizontal();
             GUILayout.Label(V, GUILayout.MinWidth(60));
 
             if (GUILayout.Button("-", GUILayout.ExpandWidth(false)))
             {
-                scale -= 0.05f;
+                scale -= step;
             }
 
             GUILayout.Label(scale.ToString("F2"), GUILayout.MinWidth(30));
 
             if (GUILayout.Button("+", GUILayout.ExpandWidth(false)))
             {
-                scale += 0.05f;
+                scale += step;
             }
 
             if (GUILayout.Button("Reset", GUILayout.ExpandWidth(false)))
             {
-                scale = 1;
+                scale = def;
             }
 
             GUILayout.EndHorizontal();
