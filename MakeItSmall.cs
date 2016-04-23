@@ -35,7 +35,7 @@ namespace MakeItSmall
         private float navBallScale = 1;
 
         [Persistent]
-        private float offset = 0;
+        private Vector2 navBallOffset = Vector2.zero;
 
         [Persistent]
         private float altimeterScale = 1;
@@ -43,8 +43,8 @@ namespace MakeItSmall
         [Persistent]
         private float timeScale = 1;
 
-        //[Persistent]
-        //private float mapOptionsScale = 1;
+        [Persistent]
+        private float mapOptionsScale = 1;
 
         [Persistent]
         private float stagingScale = 1;
@@ -52,28 +52,28 @@ namespace MakeItSmall
         [Persistent]
         private float crewScale = 1;
 
-        private float scale;
+        private float uiScale;
 
-        private float activeNavBallScale    = 0;
-        private float activeAltimeterScale  = 0;
-        private float activeTimeScale       = 0;
-        //private float activeMapOptionsScale = 0;
-        //private float activeStagingScale    = 0;
-        //private float activedockingRotScale = 0;
-        //private float activedockingLinScale = 0;
-        //private float activeUiModScale = 0;
-        private float activeCrewScale       = 0;
+        //private float activeNavBallScale    = 0;
+        //private float activeAltimeterScale  = 0;
+        //private float activeTimeScale       = 0;
+        ////private float activeMapOptionsScale = 0;
+        ////private float activeStagingScale    = 0;
+        ////private float activedockingRotScale = 0;
+        ////private float activedockingLinScale = 0;
+        ////private float activeUiModScale = 0;
+        //private float activeCrewScale       = 0;
 
         private bool initialSaved = false;
 
         private InitialState initialNavBallState = new InitialState();
         private InitialState initialAltimeterState = new InitialState();
         private InitialState initialTimeState = new InitialState();
-        //private InitialState initialMapOptionsState = new InitialState();
-        //private InitialState initialStagingState = new InitialState();
-        //private InitialState initialdockingRotState = new InitialState();
-        //private InitialState initialdockingLinState = new InitialState();
-        //private InitialState initialUiModState = new InitialState();
+        private InitialState initialMapOptionsState = new InitialState();
+        private InitialState initialStagingState = new InitialState();
+        private InitialState initialdockingRotState = new InitialState();
+        private InitialState initialdockingLinState = new InitialState();
+        private InitialState initialUiModState = new InitialState();
         private InitialState initialCrewState = new InitialState();
 
         private NavBallBurnVector navBallBurnVector;
@@ -89,8 +89,6 @@ namespace MakeItSmall
 
         public void Start()
         {
-            //DontDestroyOnLoad(gameObject);
-
             if (File.Exists<MakeItSmall>("MakeItSmall.cfg"))
             {
                 ConfigNode config = ConfigNode.Load(IOUtils.GetFilePathFor(this.GetType(), "MakeItSmall.cfg"));
@@ -120,16 +118,16 @@ namespace MakeItSmall
             if (HighLogic.LoadedScene != GameScenes.FLIGHT)
                 return;
 
-            scale = GameSettings.UI_SCALE;
-
+            uiScale = GameSettings.UI_SCALE;
+            
             SaveState(FlightUIModeController.Instance.navBall, initialNavBallState);
             SaveState(FlightUIModeController.Instance.altimeterFrame, initialAltimeterState);
             SaveState(FlightUIModeController.Instance.timeFrame, initialTimeState);
-            //SaveState(FlightUIModeController.Instance.MapOptionsQuadrant, initialMapOptionsState);
-            //SaveState(FlightUIModeController.Instance.stagingQuadrant, initialStagingState);
-            //SaveState(FlightUIModeController.Instance.dockingRotQuadrant, initialdockingRotState);
-            //SaveState(FlightUIModeController.Instance.dockingLinQuadrant, initialdockingLinState);
-            //SaveState(FlightUIModeController.Instance.uiModeFrame, initialUiModState);
+            SaveState(FlightUIModeController.Instance.MapOptionsQuadrant, initialMapOptionsState);
+            SaveState(FlightUIModeController.Instance.stagingQuadrant, initialStagingState);
+            SaveState(FlightUIModeController.Instance.dockingRotQuadrant, initialdockingRotState);
+            SaveState(FlightUIModeController.Instance.dockingLinQuadrant, initialdockingLinState);
+            SaveState(FlightUIModeController.Instance.uiModeFrame, initialUiModState);
             SaveState(FlightUIModeController.Instance.crew, initialCrewState);
 
             //printRectInfo(FlightUIModeController.Instance.navBall, "navBall");
@@ -154,20 +152,20 @@ namespace MakeItSmall
             if (!initialSaved || HighLogic.LoadedScene != GameScenes.FLIGHT || !FlightUIModeController.Instance || navBallBurnVector.deltaVGauge == null)
                 return;
             
-            SetScale(FlightUIModeController.Instance.navBall, initialNavBallState, navBallScale, ref activeNavBallScale);
-            SetScale(FlightUIModeController.Instance.altimeterFrame, initialAltimeterState, altimeterScale, ref activeAltimeterScale);
-            SetScale(FlightUIModeController.Instance.timeFrame, initialTimeState, timeScale, ref activeTimeScale);
-            //SetScale(FlightUIModeController.Instance.MapOptionsQuadrant, initialMapOptionsState, mapOptionsScale, ref activeMapOptionsScale);
-            //SetScale(FlightUIModeController.Instance.stagingQuadrant, initialStagingState, stagingScale, ref activeStagingScale);
-            //SetScale(FlightUIModeController.Instance.dockingRotQuadrant, initialdockingRotState, stagingScale, ref activedockingRotScale);
-            //SetScale(FlightUIModeController.Instance.dockingLinQuadrant, initialdockingLinState, stagingScale, ref activedockingLinScale);
-            //SetScale(FlightUIModeController.Instance.uiModeFrame, initialUiModState, stagingScale, ref activeUiModScale);
-            SetScale(FlightUIModeController.Instance.crew, initialCrewState, crewScale, ref activeCrewScale);
+            SetScale(FlightUIModeController.Instance.navBall, initialNavBallState, navBallScale, navBallOffset);
+            SetScale(FlightUIModeController.Instance.altimeterFrame, initialAltimeterState, altimeterScale);
+            SetScale(FlightUIModeController.Instance.timeFrame, initialTimeState, timeScale);
+            SetScale(FlightUIModeController.Instance.MapOptionsQuadrant, initialMapOptionsState, mapOptionsScale);
+            SetScale(FlightUIModeController.Instance.stagingQuadrant, initialStagingState, stagingScale);
+            SetScale(FlightUIModeController.Instance.dockingRotQuadrant, initialdockingRotState, stagingScale);
+            //SetScale(FlightUIModeController.Instance.dockingLinQuadrant, initialdockingLinState, stagingScale);
+            SetScale(FlightUIModeController.Instance.uiModeFrame, initialUiModState, stagingScale);
+            SetScale(FlightUIModeController.Instance.crew, initialCrewState, crewScale);
 
-            if (scale != GameSettings.UI_SCALE)
+            if (uiScale != GameSettings.UI_SCALE)
             {
-                UIMasterController.Instance.SetScale(scale);
-                GameSettings.UI_SCALE = scale;
+                UIMasterController.Instance.SetScale(uiScale);
+                GameSettings.UI_SCALE = uiScale;
                 GameSettings.SaveSettings();
             }
 
@@ -188,20 +186,18 @@ namespace MakeItSmall
             }
         }
 
-        private void SetScale(UIPanelTransition panel, InitialState initialState, float newScale, ref float activeScale)
+        private void SetScale(UIPanelTransition panel, InitialState initialState, float scale, Vector2 offset = default(Vector2))
         {
-            if (activeScale != newScale && panel)
+            if (panel)
             {
-                panel.panelTransform.localScale = initialState.scale * newScale;
+                panel.panelTransform.localScale = initialState.scale * scale;
 
                 for (int i = 0; i < panel.states.Length; i++)
                 {
-                    panel.states[i].position = initialState.states[i].position * newScale;
+                    panel.states[i].position = initialState.states[i].position * scale + offset;
                 }
 
                 panel.panelTransform.anchoredPosition = panel.states[panel.StateIndex].position;
-
-                activeScale = newScale;
             }
         }
 
@@ -226,13 +222,13 @@ namespace MakeItSmall
         {
             GUILayout.BeginVertical();
 
-            ScaleUI("All"  , ref scale);
+            ScaleUI("All"  , ref uiScale);
             ScaleUI("NavBall"  , ref navBallScale);
-            ScaleUI("NavBall Offset", ref offset, 10f, 0);
+            ScaleUI("NavBall Offset", ref navBallOffset.x, 10f, "F0", 0);
             ScaleUI("Altimeter", ref altimeterScale);
             ScaleUI("Time"     , ref timeScale);
-            //ScaleUI("Map"      , ref mapOptionsScale);
-            //ScaleUI("Staging"  , ref stagingScale);
+            ScaleUI("Map"      , ref mapOptionsScale);
+            ScaleUI("Staging"  , ref stagingScale);
             ScaleUI("Crew"     , ref crewScale);
 
             GUILayout.EndVertical();
@@ -240,7 +236,7 @@ namespace MakeItSmall
             GUI.DragWindow();
         }
 
-        private void ScaleUI(string V, ref float scale, float step=0.05f, float def = 1f)
+        private void ScaleUI(string V, ref float scale, float step=0.05f, string format="F2", float def = 1f)
         {
             GUILayout.BeginHorizontal();
             GUILayout.Label(V, GUILayout.MinWidth(60));
@@ -250,7 +246,7 @@ namespace MakeItSmall
                 scale -= step;
             }
 
-            GUILayout.Label(scale.ToString("F2"), GUILayout.MinWidth(30));
+            GUILayout.Label(scale.ToString(format), GUILayout.MinWidth(30));
 
             if (GUILayout.Button("+", GUILayout.ExpandWidth(false)))
             {
